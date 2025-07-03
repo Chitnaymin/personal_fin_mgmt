@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "995036170138",
+    "project_id": "personal-io-system",
+    "storage_bucket": "personal-io-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:995036170138:android:e3e1d8fc8cbcafe66e9c23",
+        "android_client_info": {
+          "package_name": "com.example.finance_pwa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH7o-dRtvQgfBYyDj9p2icLMtmB23m6aY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:995036170138:android:27d86de7a1d7e1d06e9c23",
+        "android_client_info": {
+          "package_name": "com.example.flutter_fin_pwa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH7o-dRtvQgfBYyDj9p2icLMtmB23m6aY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
