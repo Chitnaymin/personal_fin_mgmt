@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_fin_pwa/screens/main/manage_categories_page.dart';
 import 'package:provider/provider.dart';
 
 import 'package:flutter_fin_pwa/models/currency_model.dart';
@@ -116,6 +117,17 @@ class _SettingsPageState extends State<SettingsPage> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Save Budget'),
+                ),
+                // Just below the Currency Dropdown, before the Divider
+                ListTile(
+                  title: const Text('Customize Categories'),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ManageCategoriesPage()),
+                    );
+                  },
                 ),
                 const Divider(height: 40),
                 ListTile(

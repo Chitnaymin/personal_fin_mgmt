@@ -52,13 +52,15 @@ class FirestoreService {
     return _transactionsCollectionRef().doc(transactionId).delete();
   }
 
-  // Save user budget settings
+  // We will also modify saveBudget to initialize the categories if they don't exist
   Future<void> saveBudget(double monthlyBudget, double yearlyBudget) {
-    // This now saves the budget as fields on the user's document.
     return _userDocRef().set({
       'monthlyBudget': monthlyBudget,
       'yearlyBudget': yearlyBudget,
-    }, SetOptions(merge: true)); // merge:true ensures we don't overwrite other settings
+      // Add default categories when settings are first saved
+      'incomeCategories': FieldValue.arrayUnion(['Salary', 'Gifts', 'Investment']),
+      'outcomeCategories': FieldValue.arrayUnion(['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment']),
+    }, SetOptions(merge: true));
   }
 
   // Get user budget settings
@@ -66,5 +68,21 @@ class FirestoreService {
     if (userId == null) return Stream.empty();
     // This correctly gets the user's main document.
     return _userDocRef().snapshots();
+  }
+
+  // Add a new category to the list (either 'income' or 'outcome')
+  Future<void> addCategory(String newCategory, String type) {
+    final field = type == 'income' ? 'incomeCategories' : 'outcomeCategories';
+    return _userDocRef().update({
+      field: FieldValue.arrayUnion([newCategory])
+    });
+  }
+
+  // Delete a category from the list
+  Future<void> deleteCategory(String category, String type) {
+    final field = type == 'income' ? 'incomeCategories' : 'outcomeCategories';
+    return _userDocRef().update({
+      field: FieldValue.arrayRemove([category])
+    });
   }
 }

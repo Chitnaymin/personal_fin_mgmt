@@ -5,6 +5,7 @@ class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   AuthService() {
+    // ignore: avoid_print
     print("AuthService has been created!");
   }
 
@@ -15,10 +16,9 @@ class AuthService extends ChangeNotifier {
   Future<UserCredential?> signInWithEmail(String email, String password) async {
     try {
       return await _auth.signInWithEmailAndPassword(email: email, password: password);
-    } on FirebaseAuthException catch (e) {
-      // Handle errors (e.g., user-not-found, wrong-password)
-      print(e.message);
-      return null;
+    } on FirebaseAuthException {
+      // Instead of returning null, we pass the exception back up.
+      rethrow;
     }
   }
 
@@ -27,6 +27,7 @@ class AuthService extends ChangeNotifier {
       return await _auth.createUserWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
       // Handle errors (e.g., email-already-in-use, weak-password)
+      // ignore: avoid_print
       print(e.message);
       return null;
     }

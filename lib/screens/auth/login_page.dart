@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_fin_pwa/screens/auth/register_page.dart';
@@ -17,25 +18,43 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      final authService = Provider.of<AuthService>(context, listen: false);
-      
-      final userCredential = await authService.signInWithEmail(
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    try {
+      // This part doesn't change
+      await authService.signInWithEmail(
         _emailController.text,
         _passwordController.text,
       );
+    } on FirebaseAuthException catch (e) {
+      // Catch the specific error from Firebase
+      String errorMessage;
+      // Provide more user-friendly messages for common errors
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Wrong password provided for that user.';
+      } else if (e.code == 'invalid-credential') {
+        // This is a more generic error for recent Firebase versions
+         errorMessage = 'Invalid credentials. Please check your email and password.';
+      }
+      else {
+        errorMessage = e.message ?? 'An unknown error occurred.';
+      }
 
-      if (userCredential == null && mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to log in. Please check your credentials.')),
+          SnackBar(content: Text(errorMessage)),
         );
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
