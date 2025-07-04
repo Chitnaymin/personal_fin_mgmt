@@ -41,13 +41,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDCTLZWZ30Cpt3C3akQCgDWufQmT8tq0rM',
-    appId: '1:995036170138:web:25628562f21a85166e9c23',
+    apiKey: 'AIzaSyDWZzovMjao9zr_2iTJWWTn2v-c-dkF5S8',
+    appId: '1:995036170138:web:1be84e9da3d996336e9c23',
     messagingSenderId: '995036170138',
     projectId: 'personal-io-system',
     authDomain: 'personal-io-system.firebaseapp.com',
     storageBucket: 'personal-io-system.firebasestorage.app',
-    measurementId: 'G-TEZD1ES7MN',
+    measurementId: 'G-GHL6FPN11Z',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDCTLZWZ30Cpt3C3akQCgDWufQmT8tq0rM',
+    apiKey: 'AIzaSyDWZzovMjao9zr_2iTJWWTn2v-c-dkF5S8',
     appId: '1:995036170138:web:1be84e9da3d996336e9c23',
     messagingSenderId: '995036170138',
     projectId: 'personal-io-system',
@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'personal-io-system.firebasestorage.app',
     measurementId: 'G-GHL6FPN11Z',
   );
+
 }
