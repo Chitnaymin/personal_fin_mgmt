@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_fin_pwa/models/transaction_model.dart';
 import 'package:flutter_fin_pwa/services/firestore_service.dart';
 import 'package:flutter_fin_pwa/services/settings_provider.dart';
+import 'package:flutter_fin_pwa/models/currency_model.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -14,8 +15,7 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firestoreService = FirestoreService();
-    // Get the selected currency from the provider
-    final selectedCurrency = Provider.of<SettingsProvider>(context).selectedCurrency;
+    final settingsProvider = Provider.of<SettingsProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +24,6 @@ class DashboardPage extends StatelessWidget {
       body: StreamBuilder<List<FinancialTransaction>>(
         stream: firestoreService.getTransactions(),
         builder: (context, snapshot) {
-          // ... (builder logic remains the same)
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -41,13 +40,20 @@ class DashboardPage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              _buildSummaryCard(totalIncome, totalOutcome, selectedCurrency),
+              _buildSummaryCard(totalIncome, totalOutcome, settingsProvider.selectedCurrency),
               const SizedBox(height: 20),
-              _buildBudgetCard(firestoreService, totalOutcome, selectedCurrency),
+              _buildBudgetCard(firestoreService, totalOutcome, settingsProvider.selectedCurrency),
               const SizedBox(height: 20),
+              
               const Text("Spending by Category", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              SizedBox(height: 200, child: _buildPieChart(currentMonthTransactions)),
+              SizedBox(height: 200, child: _buildCategoryPieChart(currentMonthTransactions)),
+              
+              const SizedBox(height: 20),
+
+              const Text("Spending by Person", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              SizedBox(height: 200, child: _buildPersonPieChart(currentMonthTransactions)),
             ],
           );
         },
@@ -55,7 +61,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(double income, double outcome, dynamic selectedCurrency) {
+  Widget _buildSummaryCard(double income, double outcome, Currency selectedCurrency) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -72,7 +78,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
   
-  Widget _summaryItem(String title, double amount, Color color, dynamic selectedCurrency) {
+  Widget _summaryItem(String title, double amount, Color color, Currency selectedCurrency) {
     return Column(
       children: [
         Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
@@ -85,7 +91,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetCard(FirestoreService service, double totalOutcome, dynamic selectedCurrency) {
+  Widget _buildBudgetCard(FirestoreService service, double totalOutcome, Currency selectedCurrency) {
     return StreamBuilder<DocumentSnapshot>(
       stream: service.getBudget(),
       builder: (context, snapshot) {
@@ -105,11 +111,12 @@ class DashboardPage extends StatelessWidget {
               children: [
                 const Text("Monthly Budget", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: monthlyBudget > 0 ? totalOutcome / monthlyBudget : 0,
-                  minHeight: 10,
-                  borderRadius: BorderRadius.circular(5),
-                ),
+                if (monthlyBudget > 0)
+                  LinearProgressIndicator(
+                    value: totalOutcome / monthlyBudget,
+                    minHeight: 10,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
                 const SizedBox(height: 10),
                 Text("Left to spend: ${NumberFormat.currency(locale: selectedCurrency.locale, symbol: selectedCurrency.symbol).format(budgetLeft)}"),
               ],
@@ -120,7 +127,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
   
-  Widget _buildPieChart(List<FinancialTransaction> transactions) {
+  Widget _buildCategoryPieChart(List<FinancialTransaction> transactions) {
     final spendingByCategory = <String, double>{};
     transactions.where((t) => t.type == 'outcome').forEach((t) {
       spendingByCategory.update(t.category, (value) => value + t.amount, ifAbsent: () => t.amount);
@@ -136,6 +143,42 @@ class DashboardPage extends StatelessWidget {
         title: entry.key,
         radius: 80,
         titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+      );
+    }).toList();
+
+    return PieChart(
+      PieChartData(
+        sections: pieChartSections,
+        centerSpaceRadius: 40,
+        sectionsSpace: 2,
+      ),
+    );
+  }
+
+  Widget _buildPersonPieChart(List<FinancialTransaction> transactions) {
+    final spendingByPerson = <String, double>{};
+    transactions.where((t) => t.type == 'outcome').forEach((t) {
+      spendingByPerson.update(t.person, (value) => value + t.amount, ifAbsent: () => t.amount);
+    });
+
+    if (spendingByPerson.isEmpty) {
+      return const Center(child: Text("No expenses to show."));
+    }
+
+    final List<Color> chartColors = [
+      Colors.blueAccent, Colors.redAccent, Colors.greenAccent, Colors.orangeAccent, Colors.purpleAccent, Colors.tealAccent
+    ];
+
+    int colorIndex = 0;
+    final pieChartSections = spendingByPerson.entries.map((entry) {
+      final sectionColor = chartColors[colorIndex % chartColors.length];
+      colorIndex++;
+      return PieChartSectionData(
+        color: sectionColor,
+        value: entry.value,
+        title: '${entry.key}\n${entry.value.toStringAsFixed(0)}',
+        radius: 80,
+        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
       );
     }).toList();
 

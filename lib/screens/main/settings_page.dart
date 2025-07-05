@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fin_pwa/screens/main/manage_categories_page.dart';
+import 'package:flutter_fin_pwa/screens/main/manage_people_page.dart';
 import 'package:provider/provider.dart';
 
 import 'package:flutter_fin_pwa/models/currency_model.dart';
@@ -126,6 +127,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const ManageCategoriesPage()),
+                    );
+                  },
+                ),
+                ListTile(
+                  title: const Text('Manage People'),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ManagePeoplePage()),
                     );
                   },
                 ),

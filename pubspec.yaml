@@ -19,6 +19,7 @@ dependencies:
   provider: ^6.1.1
 
   # UI & Utilities
+  image_picker: ^1.0.7
   fl_chart: ^0.66.2
   intl: ^0.19.0 
 
