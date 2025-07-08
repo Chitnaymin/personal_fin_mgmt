@@ -58,12 +58,3 @@ A **Progressive Web App (PWA)** built with **Flutter** for modern, simple, and e
 - **Animations**: `flutter_staggered_animations`
 
 ---
-
-## 🛠️ Getting Started
-
-### ✅ Prerequisites
-
-- Flutter SDK installed.
-- Firebase CLI installed:  
-  ```bash
-  npm install -g firebase-tools
