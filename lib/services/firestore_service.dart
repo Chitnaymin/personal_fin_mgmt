@@ -31,6 +31,7 @@ class FirestoreService {
       'incomeCategories': ['Salary', 'Gifts', 'Investment'],
       'outcomeCategories': ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment'],
       'people': ['Me'],
+      'theme': 'light',
     });
   }
 
@@ -89,5 +90,9 @@ class FirestoreService {
     return _userDocRef().update({
       'people': FieldValue.arrayRemove([person])
     });
+  }
+
+  Future<void> saveTheme(String themeName) {
+    return _userDocRef().update({'theme': themeName});
   }
 }

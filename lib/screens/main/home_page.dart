@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
+
 import 'package:flutter_fin_pwa/screens/main/add_transaction_page.dart';
 import 'package:flutter_fin_pwa/screens/main/dashboard_page.dart';
 import 'package:flutter_fin_pwa/screens/main/settings_page.dart';
+import 'package:flutter_fin_pwa/screens/main/statistics_page.dart';
 import 'package:flutter_fin_pwa/screens/main/transactions_page.dart';
-import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   static const List<Widget> _pages = <Widget>[
     DashboardPage(),
     TransactionsPage(),
+    StatisticsPage(),
     SettingsPage(),
   ];
 
@@ -25,7 +28,11 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    _pageController.jumpToPage(index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -40,27 +47,53 @@ class _HomePageState extends State<HomePage> {
         },
         children: _pages,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTransactionPage()));
-        },
-        tooltip: 'Add Transaction',
-        child: const Icon(Icons.add),
+      // --- TOOLTIP ADDED TO FAB ---
+      floatingActionButton: Tooltip(
+        message: 'Add Transaction',
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AddTransactionPage()));
+          },
+          child: const Icon(Icons.add),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-        notchMargin: 6.0,
+        notchMargin: 8.0,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            IconButton(icon: const Icon(Icons.dashboard), onPressed: () => _onItemTapped(0), color: _selectedIndex == 0 ? Theme.of(context).primaryColor : Colors.grey),
-            IconButton(icon: const Icon(Icons.list_alt), onPressed: () => _onItemTapped(1), color: _selectedIndex == 1 ? Theme.of(context).primaryColor : Colors.grey),
-            const SizedBox(width: 40), // The space for the FAB
-            IconButton(icon: const Icon(Icons.bar_chart), onPressed: () => _onItemTapped(1), color: _selectedIndex == 1 ? Theme.of(context).primaryColor : Colors.grey), // Placeholder
-            IconButton(icon: const Icon(Icons.settings), onPressed: () => _onItemTapped(2), color: _selectedIndex == 2 ? Theme.of(context).primaryColor : Colors.grey),
+            _buildNavItem(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, pageIndex: 0, label: 'Dashboard'),
+            _buildNavItem(icon: Icons.list_alt_outlined, selectedIcon: Icons.list_alt, pageIndex: 1, label: 'Transactions'),
+            
+            const SizedBox(width: 48),
+            
+            _buildNavItem(icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, pageIndex: 2, label: 'Statistics'),
+            _buildNavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, pageIndex: 3, label: 'Settings'),
           ],
         ),
+      ),
+    );
+  }
+
+  // --- UPDATED HELPER TO WRAP IconButton WITH Tooltip ---
+  Widget _buildNavItem({required IconData icon, required IconData selectedIcon, required int pageIndex, required String label}) {
+    final bool isSelected = _selectedIndex == pageIndex;
+    return Tooltip(
+      message: label,
+      child: IconButton(
+        iconSize: 28,
+        icon: Icon(
+          isSelected ? selectedIcon : icon,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey.shade600,
+        ),
+        onPressed: () => _onItemTapped(pageIndex),
       ),
     );
   }

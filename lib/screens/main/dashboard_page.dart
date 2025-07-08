@@ -16,6 +16,7 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final firestoreService = FirestoreService();
     final settingsProvider = Provider.of<SettingsProvider>(context);
+    final selectedCurrency = settingsProvider.selectedCurrency;
 
     return Scaffold(
       appBar: AppBar(
@@ -28,32 +29,54 @@ class DashboardPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No transactions yet. Add one to see your dashboard."));
+            return const Center(
+              child: Text(
+                "No transactions yet.\nClick the '+' button to add one!",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
           }
 
           final transactions = snapshot.data!;
           final now = DateTime.now();
-          final currentMonthTransactions = transactions.where((t) => t.date.month == now.month && t.date.year == now.year).toList();
-          double totalIncome = currentMonthTransactions.where((t) => t.type == 'income').fold(0.0, (sum, item) => sum + item.amount);
-          double totalOutcome = currentMonthTransactions.where((t) => t.type == 'outcome').fold(0.0, (sum, item) => sum + item.amount);
+          final currentMonthTransactions = transactions
+              .where((t) =>
+                  t.date.month == now.month && t.date.year == now.year)
+              .toList();
+          double totalIncome = currentMonthTransactions
+              .where((t) => t.type == 'income')
+              .fold(0.0, (sum, item) => sum + item.amount);
+          double totalOutcome = currentMonthTransactions
+              .where((t) => t.type == 'outcome')
+              .fold(0.0, (sum, item) => sum + item.amount);
 
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              _buildSummaryCard(totalIncome, totalOutcome, settingsProvider.selectedCurrency),
+              _buildSummaryCard(totalIncome, totalOutcome, selectedCurrency),
               const SizedBox(height: 20),
-              _buildBudgetCard(firestoreService, totalOutcome, settingsProvider.selectedCurrency),
+              _buildBudgetCard(
+                  firestoreService, totalOutcome, selectedCurrency),
               const SizedBox(height: 20),
               
-              const Text("Spending by Category", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text("Spending by Category",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              SizedBox(height: 200, child: _buildCategoryPieChart(currentMonthTransactions)),
+              SizedBox(
+                  height: 200,
+                  child: _buildCategoryPieChart(currentMonthTransactions)),
               
               const SizedBox(height: 20),
+              
+              const Text("Spending by Person",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              SizedBox(
+                  height: 200,
+                  child: _buildPersonPieChart(currentMonthTransactions)),
 
-              const Text("Spending by Person", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              SizedBox(height: 200, child: _buildPersonPieChart(currentMonthTransactions)),
+              const SizedBox(height: 24),
             ],
           );
         },
@@ -61,7 +84,8 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(double income, double outcome, Currency selectedCurrency) {
+  Widget _buildSummaryCard(
+      double income, double outcome, Currency selectedCurrency) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -77,29 +101,46 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _summaryItem(String title, double amount, Color color, Currency selectedCurrency) {
+
+  Widget _summaryItem(
+      String title, double amount, Color color, Currency selectedCurrency) {
     return Column(
       children: [
         Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
         const SizedBox(height: 4),
         Text(
-          NumberFormat.currency(locale: selectedCurrency.locale, symbol: selectedCurrency.symbol).format(amount),
-          style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+          NumberFormat.currency(
+                  locale: selectedCurrency.locale,
+                  symbol: selectedCurrency.symbol)
+              .format(amount),
+          style: TextStyle(
+              color: color, fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  Widget _buildBudgetCard(FirestoreService service, double totalOutcome, Currency selectedCurrency) {
+  Widget _buildBudgetCard(FirestoreService service, double totalOutcome,
+      Currency selectedCurrency) {
     return StreamBuilder<DocumentSnapshot>(
       stream: service.getBudget(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data?.data() == null) {
-          return const Card(child: ListTile(title: Text("Set your monthly budget in Settings.")));
+          return const Card(
+              child: ListTile(title: Text("Set your monthly budget in Settings.")));
         }
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final monthlyBudget = (data['monthlyBudget'] ?? 0.0).toDouble();
+        
+        if (monthlyBudget <= 0) {
+           return const Card(
+              child: ListTile(
+                leading: Icon(Icons.track_changes),
+                title: Text("Set your monthly budget in Settings to track progress.")
+              )
+            );
+        }
+        
         final budgetLeft = monthlyBudget - totalOutcome;
 
         return Card(
@@ -109,14 +150,19 @@ class DashboardPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Monthly Budget", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text("Monthly Budget",
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                if (monthlyBudget > 0)
-                  LinearProgressIndicator(
-                    value: totalOutcome / monthlyBudget,
-                    minHeight: 10,
-                    borderRadius: BorderRadius.circular(5),
+                LinearProgressIndicator(
+                  value: totalOutcome / monthlyBudget,
+                  minHeight: 10,
+                  borderRadius: BorderRadius.circular(5),
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    totalOutcome > monthlyBudget ? Colors.red : Colors.green
                   ),
+                ),
                 const SizedBox(height: 10),
                 Text("Left to spend: ${NumberFormat.currency(locale: selectedCurrency.locale, symbol: selectedCurrency.symbol).format(budgetLeft)}"),
               ],
@@ -126,11 +172,14 @@ class DashboardPage extends StatelessWidget {
       },
     );
   }
-  
+
   Widget _buildCategoryPieChart(List<FinancialTransaction> transactions) {
     final spendingByCategory = <String, double>{};
-    transactions.where((t) => t.type == 'outcome').forEach((t) {
-      spendingByCategory.update(t.category, (value) => value + t.amount, ifAbsent: () => t.amount);
+    transactions
+        .where((t) => t.type == 'outcome')
+        .forEach((t) {
+      spendingByCategory.update(t.category, (value) => value + t.amount,
+          ifAbsent: () => t.amount);
     });
 
     if (spendingByCategory.isEmpty) {
@@ -142,7 +191,8 @@ class DashboardPage extends StatelessWidget {
         value: entry.value,
         title: entry.key,
         radius: 80,
-        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        titleStyle: const TextStyle(
+            fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
       );
     }).toList();
 
@@ -157,8 +207,11 @@ class DashboardPage extends StatelessWidget {
 
   Widget _buildPersonPieChart(List<FinancialTransaction> transactions) {
     final spendingByPerson = <String, double>{};
-    transactions.where((t) => t.type == 'outcome').forEach((t) {
-      spendingByPerson.update(t.person, (value) => value + t.amount, ifAbsent: () => t.amount);
+    transactions
+        .where((t) => t.type == 'outcome')
+        .forEach((t) {
+      spendingByPerson.update(t.person, (value) => value + t.amount,
+          ifAbsent: () => t.amount);
     });
 
     if (spendingByPerson.isEmpty) {
@@ -166,7 +219,12 @@ class DashboardPage extends StatelessWidget {
     }
 
     final List<Color> chartColors = [
-      Colors.blueAccent, Colors.redAccent, Colors.greenAccent, Colors.orangeAccent, Colors.purpleAccent, Colors.tealAccent
+      Colors.blueAccent,
+      Colors.redAccent,
+      Colors.greenAccent,
+      Colors.orangeAccent,
+      Colors.purpleAccent,
+      Colors.tealAccent
     ];
 
     int colorIndex = 0;
@@ -178,7 +236,11 @@ class DashboardPage extends StatelessWidget {
         value: entry.value,
         title: '${entry.key}\n${entry.value.toStringAsFixed(0)}',
         radius: 80,
-        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
+        titleStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [Shadow(blurRadius: 2)]),
       );
     }).toList();
 
