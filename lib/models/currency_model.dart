@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 @immutable
 class Currency {
   final String name;
-  final String code; // e.g. USD
-  final String symbol; // e.g. $
-  final String locale; // e.g. en_US
+  final String code;
+  final String symbol;
+  final String locale;
 
   const Currency({
     required this.name,
@@ -25,7 +25,6 @@ class Currency {
   int get hashCode => code.hashCode;
 }
 
-// List of supported currencies for the dropdown
 const List<Currency> supportedCurrencies = [
   Currency(name: 'Thai Baht', code: 'THB', symbol: '฿', locale: 'th_TH'),
   Currency(name: 'US Dollar', code: 'USD', symbol: '\$', locale: 'en_US'),
@@ -34,5 +33,4 @@ const List<Currency> supportedCurrencies = [
   Currency(name: 'British Pound', code: 'GBP', symbol: '£', locale: 'en_GB'),
 ];
 
-// Default currency if none is selected
-final Currency defaultCurrency = supportedCurrencies[0]; // Default to Thai Baht
+final Currency defaultCurrency = supportedCurrencies[0];

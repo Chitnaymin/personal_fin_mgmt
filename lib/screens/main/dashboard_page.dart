@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_fin_pwa/models/transaction_model.dart';
 import 'package:flutter_fin_pwa/services/firestore_service.dart';
 import 'package:flutter_fin_pwa/services/settings_provider.dart';
@@ -15,68 +13,35 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firestoreService = FirestoreService();
-    final settingsProvider = Provider.of<SettingsProvider>(context);
-    final selectedCurrency = settingsProvider.selectedCurrency;
+    final currency = Provider.of<SettingsProvider>(context).selectedCurrency;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
+        centerTitle: false,
       ),
       body: StreamBuilder<List<FinancialTransaction>>(
         stream: firestoreService.getTransactions(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                "No transactions yet.\nClick the '+' button to add one!",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            );
-          }
 
-          final transactions = snapshot.data!;
-          final now = DateTime.now();
-          final currentMonthTransactions = transactions
-              .where((t) =>
-                  t.date.month == now.month && t.date.year == now.year)
-              .toList();
-          double totalIncome = currentMonthTransactions
-              .where((t) => t.type == 'income')
-              .fold(0.0, (sum, item) => sum + item.amount);
-          double totalOutcome = currentMonthTransactions
-              .where((t) => t.type == 'outcome')
-              .fold(0.0, (sum, item) => sum + item.amount);
+          final transactions = snapshot.data ?? [];
+          double totalIncome = transactions.where((t) => t.type == 'income').fold(0.0, (sum, t) => sum + t.amount);
+          double totalExpense = transactions.where((t) => t.type == 'outcome').fold(0.0, (sum, t) => sum + t.amount);
+          double balance = totalIncome - totalExpense;
 
           return ListView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _buildSummaryCard(totalIncome, totalOutcome, selectedCurrency),
-              const SizedBox(height: 20),
-              _buildBudgetCard(
-                  firestoreService, totalOutcome, selectedCurrency),
-              const SizedBox(height: 20),
-              
-              const Text("Spending by Category",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              SizedBox(
-                  height: 200,
-                  child: _buildCategoryPieChart(currentMonthTransactions)),
-              
-              const SizedBox(height: 20),
-              
-              const Text("Spending by Person",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              SizedBox(
-                  height: 200,
-                  child: _buildPersonPieChart(currentMonthTransactions)),
-
+              _buildBalanceCard(context, balance, currency),
               const SizedBox(height: 24),
+              _buildIncomeExpenseRow(context, totalIncome, totalExpense, currency),
+              const SizedBox(height: 24),
+              Text('Spending Breakdown', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              _buildSpendingChart(transactions),
             ],
           );
         },
@@ -84,171 +49,82 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(
-      double income, double outcome, Currency selectedCurrency) {
+  Widget _buildBalanceCard(BuildContext context, double balance, Currency currency) {
     return Card(
-      elevation: 2,
+      color: Theme.of(context).colorScheme.primary,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _summaryItem('Income', income, Colors.green, selectedCurrency),
-            _summaryItem('Outcome', outcome, Colors.red, selectedCurrency),
-            _summaryItem('Balance', income - outcome, Colors.blue, selectedCurrency),
+            Text('Current Balance', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70)),
+            const SizedBox(height: 8),
+            Text(
+              NumberFormat.currency(locale: currency.locale, symbol: currency.symbol).format(balance),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontSize: 32),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _summaryItem(
-      String title, double amount, Color color, Currency selectedCurrency) {
-    return Column(
+  Widget _buildIncomeExpenseRow(BuildContext context, double income, double expense, Currency currency) {
+    return Row(
       children: [
-        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-        const SizedBox(height: 4),
-        Text(
-          NumberFormat.currency(
-                  locale: selectedCurrency.locale,
-                  symbol: selectedCurrency.symbol)
-              .format(amount),
-          style: TextStyle(
-              color: color, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        Expanded(child: _buildStatCard(context, 'Income', NumberFormat.currency(locale: currency.locale, symbol: currency.symbol).format(income), Colors.green)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildStatCard(context, 'Expense', NumberFormat.currency(locale: currency.locale, symbol: currency.symbol).format(expense), Colors.red)),
       ],
     );
   }
 
-  Widget _buildBudgetCard(FirestoreService service, double totalOutcome,
-      Currency selectedCurrency) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: service.getBudget(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data?.data() == null) {
-          return const Card(
-              child: ListTile(title: Text("Set your monthly budget in Settings.")));
-        }
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final monthlyBudget = (data['monthlyBudget'] ?? 0.0).toDouble();
-        
-        if (monthlyBudget <= 0) {
-           return const Card(
-              child: ListTile(
-                leading: Icon(Icons.track_changes),
-                title: Text("Set your monthly budget in Settings to track progress.")
-              )
-            );
-        }
-        
-        final budgetLeft = monthlyBudget - totalOutcome;
-
-        return Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Monthly Budget",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: totalOutcome / monthlyBudget,
-                  minHeight: 10,
-                  borderRadius: BorderRadius.circular(5),
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    totalOutcome > monthlyBudget ? Colors.red : Colors.green
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text("Left to spend: ${NumberFormat.currency(locale: selectedCurrency.locale, symbol: selectedCurrency.symbol).format(budgetLeft)}"),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCategoryPieChart(List<FinancialTransaction> transactions) {
-    final spendingByCategory = <String, double>{};
-    transactions
-        .where((t) => t.type == 'outcome')
-        .forEach((t) {
-      spendingByCategory.update(t.category, (value) => value + t.amount,
-          ifAbsent: () => t.amount);
-    });
-
-    if (spendingByCategory.isEmpty) {
-      return const Center(child: Text("No expenses to show."));
-    }
-
-    final pieChartSections = spendingByCategory.entries.map((entry) {
-      return PieChartSectionData(
-        value: entry.value,
-        title: entry.key,
-        radius: 80,
-        titleStyle: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
-      );
-    }).toList();
-
-    return PieChart(
-      PieChartData(
-        sections: pieChartSections,
-        centerSpaceRadius: 40,
-        sectionsSpace: 2,
+  Widget _buildStatCard(BuildContext context, String title, String amount, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 4),
+            Text(amount, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPersonPieChart(List<FinancialTransaction> transactions) {
-    final spendingByPerson = <String, double>{};
-    transactions
-        .where((t) => t.type == 'outcome')
-        .forEach((t) {
-      spendingByPerson.update(t.person, (value) => value + t.amount,
-          ifAbsent: () => t.amount);
+  Widget _buildSpendingChart(List<FinancialTransaction> transactions) {
+    final spendingByCategory = <String, double>{};
+    transactions.where((t) => t.type == 'outcome').forEach((t) {
+      spendingByCategory.update(t.category, (value) => value + t.amount, ifAbsent: () => t.amount);
     });
 
-    if (spendingByPerson.isEmpty) {
-      return const Center(child: Text("No expenses to show."));
+    if (spendingByCategory.isEmpty) {
+      return const SizedBox(height: 200, child: Center(child: Text("No spending data yet.")));
     }
-
-    final List<Color> chartColors = [
-      Colors.blueAccent,
-      Colors.redAccent,
-      Colors.greenAccent,
-      Colors.orangeAccent,
-      Colors.purpleAccent,
-      Colors.tealAccent
-    ];
-
+    
+    final List<Color> chartColors = [Colors.pink, Colors.blue, Colors.orange, Colors.purple, Colors.teal, Colors.green];
     int colorIndex = 0;
-    final pieChartSections = spendingByPerson.entries.map((entry) {
-      final sectionColor = chartColors[colorIndex % chartColors.length];
-      colorIndex++;
-      return PieChartSectionData(
-        color: sectionColor,
-        value: entry.value,
-        title: '${entry.key}\n${entry.value.toStringAsFixed(0)}',
-        radius: 80,
-        titleStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [Shadow(blurRadius: 2)]),
-      );
-    }).toList();
 
-    return PieChart(
-      PieChartData(
-        sections: pieChartSections,
-        centerSpaceRadius: 40,
-        sectionsSpace: 2,
+    return SizedBox(
+      height: 200,
+      child: PieChart(
+        PieChartData(
+          sections: spendingByCategory.entries.map((entry) {
+            final color = chartColors[colorIndex++ % chartColors.length];
+            return PieChartSectionData(
+              value: entry.value,
+              color: color,
+              title: entry.key,
+              radius: 60,
+              titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+            );
+          }).toList(),
+          sectionsSpace: 4,
+          centerSpaceRadius: 40,
+        ),
       ),
     );
   }

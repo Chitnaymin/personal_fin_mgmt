@@ -20,7 +20,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _monthlyBudgetController = TextEditingController();
   final _yearlyBudgetController = TextEditingController();
   final _firestoreService = FirestoreService();
-
+  
   bool _isPageLoading = true;
   bool _isSavingBudget = false;
 
@@ -68,9 +68,75 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
+  void _showThemeSelectionDialog(BuildContext context, SettingsProvider provider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select App Theme'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: AppTheme.values.length,
+              itemBuilder: (BuildContext context, int index) {
+                final theme = AppTheme.values[index];
+                return RadioListTile<AppTheme>(
+                  title: Text(getThemeName(theme)),
+                  value: theme,
+                  groupValue: provider.appTheme,
+                  onChanged: (AppTheme? value) {
+                    if (value != null) {
+                      provider.updateTheme(value);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCurrencySelectionDialog(BuildContext context, SettingsProvider provider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Currency'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: supportedCurrencies.length,
+              itemBuilder: (BuildContext context, int index) {
+                final currency = supportedCurrencies[index];
+                return RadioListTile<Currency>(
+                  title: Text('${currency.name} (${currency.symbol})'),
+                  value: currency,
+                  groupValue: provider.selectedCurrency,
+                  onChanged: (Currency? value) {
+                    if (value != null) {
+                      provider.updateCurrency(value);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final settingsProvider = Provider.of<SettingsProvider>(context);
+    // Use .watch() here to ensure the subtitles update when a selection is made
+    final settingsProvider = context.watch<SettingsProvider>();
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -82,49 +148,35 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.all(16.0),
               children: [
                 _buildSectionTitle('Preferences'),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<Currency>(
-                  value: settingsProvider.selectedCurrency,
-                  decoration: const InputDecoration(labelText: 'Currency', border: OutlineInputBorder()),
-                  items: supportedCurrencies.map((Currency currency) {
-                    return DropdownMenuItem<Currency>(value: currency, child: Text('${currency.name} (${currency.symbol})'));
-                  }).toList(),
-                  onChanged: (Currency? newCurrency) {
-                    if (newCurrency != null) {
-                      settingsProvider.updateCurrency(newCurrency);
-                    }
-                  },
+                Card(
+                  child: Column(
+                    children: [
+                      _buildSettingsTile(context, Icons.color_lens_outlined, 'App Theme', getThemeName(settingsProvider.appTheme), () {
+                        _showThemeSelectionDialog(context, settingsProvider);
+                      }),
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                      _buildSettingsTile(context, Icons.attach_money_outlined, 'Currency', '${settingsProvider.selectedCurrency.name} (${settingsProvider.selectedCurrency.symbol})', () {
+                        _showCurrencySelectionDialog(context, settingsProvider);
+                      }),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                // --- THEME SELECTOR DROPDOWN ---
-                DropdownButtonFormField<AppTheme>(
-                  value: settingsProvider.appTheme,
-                  decoration: const InputDecoration(labelText: 'App Theme', border: OutlineInputBorder()),
-                  items: AppTheme.values.map((AppTheme theme) {
-                    return DropdownMenuItem<AppTheme>(
-                      value: theme,
-                      child: Text(getThemeName(theme)),
-                    );
-                  }).toList(),
-                  onChanged: (AppTheme? newTheme) {
-                    if (newTheme != null) {
-                      // This call updates the state and triggers the UI change
-                      settingsProvider.updateTheme(newTheme);
-                    }
-                  },
+                const SizedBox(height: 24),
+                _buildSectionTitle('Customization'),
+                Card(
+                  child: Column(
+                    children: [
+                      _buildSettingsTile(context, Icons.category_outlined, 'Manage Categories', 'Income & Outcome', () {
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCategoriesPage()));
+                      }),
+                       const Divider(height: 1, indent: 16, endIndent: 16),
+                      _buildSettingsTile(context, Icons.people_outline, 'Manage People', 'Edit members', () {
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePeoplePage()));
+                      }),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildNavigationTile(
-                  'Customize Categories',
-                  () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageCategoriesPage())),
-                ),
-                _buildNavigationTile(
-                  'Manage People',
-                  () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManagePeoplePage())),
-                ),
-
-                const Divider(height: 40),
-
+                const SizedBox(height: 24),
                 _buildSectionTitle('Budget Goals'),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -153,9 +205,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         )
                       : const Text('Save Budget'),
                 ),
-
                 const Divider(height: 40),
-
                 _buildSectionTitle('Account'),
                  const SizedBox(height: 8),
                 ListTile(
@@ -163,7 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: const Icon(Icons.logout, color: Colors.red),
                   title: const Text('Logout'),
                   onTap: () {
-                    Provider.of<AuthService>(context, listen: false).signOut();
+                    authService.signOut();
                   },
                 )
               ],
@@ -172,23 +222,22 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-        fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, bottom: 8),
+      child: Text(
+        title,
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
       ),
     );
   }
   
-  Widget _buildNavigationTile(String title, VoidCallback onTap) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
-      ),
+  Widget _buildSettingsTile(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
     );
   }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter_fin_pwa/screens/main/add_transaction_page.dart';
+// Import your functional pages
 import 'package:flutter_fin_pwa/screens/main/dashboard_page.dart';
-import 'package:flutter_fin_pwa/screens/main/settings_page.dart';
-import 'package:flutter_fin_pwa/screens/main/statistics_page.dart';
 import 'package:flutter_fin_pwa/screens/main/transactions_page.dart';
+import 'package:flutter_fin_pwa/screens/main/statistics_page.dart';
+import 'package:flutter_fin_pwa/screens/main/settings_page.dart';
+import 'package:flutter_fin_pwa/screens/main/add_transaction_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,7 +18,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
 
-  static const List<Widget> _pages = <Widget>[
+  static const List<Widget> _pages = [
     DashboardPage(),
     TransactionsPage(),
     StatisticsPage(),
@@ -25,9 +26,7 @@ class _HomePageState extends State<HomePage> {
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
@@ -40,25 +39,14 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onPageChanged: (index) => setState(() => _selectedIndex = index),
         children: _pages,
       ),
-      // --- TOOLTIP ADDED TO FAB ---
-      floatingActionButton: Tooltip(
-        message: 'Add Transaction',
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const AddTransactionPage()));
-          },
-          child: const Icon(Icons.add),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTransactionPage()));
+        },
+        child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
@@ -66,35 +54,23 @@ class _HomePageState extends State<HomePage> {
         notchMargin: 8.0,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            _buildNavItem(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, pageIndex: 0, label: 'Dashboard'),
-            _buildNavItem(icon: Icons.list_alt_outlined, selectedIcon: Icons.list_alt, pageIndex: 1, label: 'Transactions'),
-            
+          children: [
+            _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, 0),
+            _buildNavItem(Icons.list_alt_outlined, Icons.list_alt, 1),
             const SizedBox(width: 48),
-            
-            _buildNavItem(icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, pageIndex: 2, label: 'Statistics'),
-            _buildNavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, pageIndex: 3, label: 'Settings'),
+            _buildNavItem(Icons.bar_chart_outlined, Icons.bar_chart, 2),
+            _buildNavItem(Icons.settings_outlined, Icons.settings, 3),
           ],
         ),
       ),
     );
   }
 
-  // --- UPDATED HELPER TO WRAP IconButton WITH Tooltip ---
-  Widget _buildNavItem({required IconData icon, required IconData selectedIcon, required int pageIndex, required String label}) {
-    final bool isSelected = _selectedIndex == pageIndex;
-    return Tooltip(
-      message: label,
-      child: IconButton(
-        iconSize: 28,
-        icon: Icon(
-          isSelected ? selectedIcon : icon,
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Colors.grey.shade600,
-        ),
-        onPressed: () => _onItemTapped(pageIndex),
-      ),
+  Widget _buildNavItem(IconData icon, IconData selectedIcon, int index) {
+    bool isSelected = _selectedIndex == index;
+    return IconButton(
+      icon: Icon(isSelected ? selectedIcon : icon, color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey),
+      onPressed: () => _onItemTapped(index),
     );
   }
 }

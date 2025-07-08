@@ -8,7 +8,7 @@ class FinancialTransaction {
   final String category;
   final String person;
   final String? notes;
-  final String? receiptImageBase64; // Changed from receiptImageUrl
+  final String? receiptImageBase64;
   final DateTime date;
 
   FinancialTransaction({
@@ -19,7 +19,7 @@ class FinancialTransaction {
     required this.category,
     required this.person,
     this.notes,
-    this.receiptImageBase64, // Changed from receiptImageUrl
+    this.receiptImageBase64,
     required this.date,
   });
 
@@ -30,7 +30,7 @@ class FinancialTransaction {
       'category': category,
       'person': person,
       'notes': notes,
-      'receiptImageBase64': receiptImageBase64, // Changed from receiptImageUrl
+      'receiptImageBase64': receiptImageBase64,
       'date': Timestamp.fromDate(date),
     };
   }
@@ -44,7 +44,7 @@ class FinancialTransaction {
       category: map['category'],
       person: map['person'] ?? 'Unknown',
       notes: map['notes'],
-      receiptImageBase64: map['receiptImageBase64'], // Changed from receiptImageUrl
+      receiptImageBase64: map['receiptImageBase64'],
       date: (map['date'] as Timestamp).toDate(),
     );
   }

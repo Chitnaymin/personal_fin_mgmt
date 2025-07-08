@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Note: We no longer import firebase_storage or image_picker here.
 import 'package:flutter_fin_pwa/models/transaction_model.dart';
 
 class FirestoreService {
@@ -17,7 +16,6 @@ class FirestoreService {
     return _userDocRef().collection('transactions');
   }
   
-  // Helper to generate a new transaction ID for uploads
   String getNewTransactionId() {
     return _transactionsCollectionRef().doc().id;
   }
@@ -28,12 +26,24 @@ class FirestoreService {
       'createdAt': FieldValue.serverTimestamp(),
       'monthlyBudget': 0.0,
       'yearlyBudget': 0.0,
+      'selectedTheme': 'light', // Default theme
+      'selectedCurrencyCode': 'THB', // Default currency
       'incomeCategories': ['Salary', 'Gifts', 'Investment'],
       'outcomeCategories': ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment'],
       'people': ['Me'],
-      'theme': 'light',
     });
   }
+
+  // --- THE SINGLE, CORRECT METHOD FOR SAVING PREFERENCES ---
+  Future<void> saveUserPreferences(String themeName, String currencyCode) {
+    if (userId == null) throw Exception("User not logged in.");
+    return _userDocRef().update({
+      'selectedTheme': themeName,
+      'selectedCurrencyCode': currencyCode,
+    });
+  }
+
+  // Delete any other methods like `saveTheme` if they exist.
 
   Future<void> saveBudget(double monthlyBudget, double yearlyBudget) {
     return _userDocRef().update({
@@ -90,9 +100,5 @@ class FirestoreService {
     return _userDocRef().update({
       'people': FieldValue.arrayRemove([person])
     });
-  }
-
-  Future<void> saveTheme(String themeName) {
-    return _userDocRef().update({'theme': themeName});
   }
 }

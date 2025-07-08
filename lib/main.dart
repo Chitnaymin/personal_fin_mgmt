@@ -13,7 +13,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Wrap the entire app in MultiProvider to make services available everywhere.
   runApp(
     MultiProvider(
       providers: [
@@ -30,14 +29,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // This 'watch' creates a subscription. When the provider's theme changes,
-    // this MyApp widget will rebuild.
+    // Watch the provider to listen for changes
     final settingsProvider = context.watch<SettingsProvider>();
 
+    // While the provider is fetching settings from Firestore, show a loading screen.
+    if (settingsProvider.isLoading) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    // Once settings are loaded, build the app with the correct theme.
     return MaterialApp(
       title: 'Finance Tracker',
-      // The theme is now dynamically selected from our appThemeData map.
-      theme: appThemeData[settingsProvider.appTheme],
+      theme: getThemeData(settingsProvider.appTheme),
       debugShowCheckedModeBanner: false,
       home: const AuthGate(),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// An Enum provides a type-safe way to refer to our themes.
+// --- ENUM WITH ALL 5 THEMES ---
 enum AppTheme {
   light,
   dark,
@@ -9,60 +9,97 @@ enum AppTheme {
   lightPurple,
 }
 
-// A map that links each theme enum to its actual ThemeData object.
-final Map<AppTheme, ThemeData> appThemeData = {
-  AppTheme.light: ThemeData(
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-    useMaterial3: true,
-  ),
-  AppTheme.dark: ThemeData(
-    brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: Brightness.dark,
-    ),
-    useMaterial3: true,
-  ),
-  AppTheme.grey: ThemeData(
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black87,
-    ),
-    useMaterial3: true,
-  ),
-  AppTheme.lightPink: ThemeData(
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink.shade200),
-    scaffoldBackgroundColor: const Color.fromARGB(255, 255, 255, 255),
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.pink.shade50,   // A very light pink
-      foregroundColor: Colors.pink.shade800, // Dark pink text for contrast
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.pink.shade300, // Button color
-        foregroundColor: Colors.white,         // Button text color
-      )
-    ),
+ThemeData getThemeData(AppTheme theme) {
+  const serenePrimaryColor = Color(0xFFE91E63);
+  const sereneTextColor = Color(0xFF333333);
 
+  // The base theme that all themes will share
+  final baseTheme = ThemeData(
     useMaterial3: true,
-  ),
-  AppTheme.lightPurple: ThemeData(
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-    scaffoldBackgroundColor: const Color(0xFFF3E5F5), // Light Purple Background
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.deepPurple.shade50,
-      foregroundColor: Colors.deepPurple.shade800,
+    fontFamily: 'Inter',
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
     ),
-    useMaterial3: true,
-  ),
-};
+    textTheme: const TextTheme(
+      headlineMedium: TextStyle(fontWeight: FontWeight.bold, color: sereneTextColor, fontSize: 28),
+      titleLarge: TextStyle(fontWeight: FontWeight.bold, color: sereneTextColor, fontSize: 20),
+      bodyLarge: TextStyle(color: sereneTextColor, fontSize: 16),
+      bodyMedium: TextStyle(color: Colors.grey, fontSize: 14),
+    ),
+  );
 
-// A helper function to get a user-friendly name for the dropdown menu.
+  switch (theme) {
+    // --- 1. THE TRADITIONAL LIGHT THEME (BLUE) ---
+    case AppTheme.light:
+      return baseTheme.copyWith(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF9FAFC),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        appBarTheme: baseTheme.appBarTheme.copyWith(
+          backgroundColor: const Color(0xFFF9FAFC),
+          foregroundColor: sereneTextColor,
+          titleTextStyle: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: sereneTextColor),
+        ),
+      );
+    
+    // --- 2. THE DARK THEME ---
+    case AppTheme.dark:
+       return baseTheme.copyWith(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: serenePrimaryColor, // Pink accent on dark theme
+          brightness: Brightness.dark,
+        ),
+      );
+
+    // --- 3. THE GREY THEME ---
+    case AppTheme.grey:
+      return baseTheme.copyWith(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.blueGrey.shade50,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
+         appBarTheme: baseTheme.appBarTheme.copyWith(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          titleTextStyle: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
+      );
+
+    // --- 4. THE LIGHT PINK THEME ---
+    case AppTheme.lightPink:
+      return baseTheme.copyWith(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFFFF0F5),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
+        appBarTheme: baseTheme.appBarTheme.copyWith(
+          backgroundColor: Colors.pink.shade50,
+          foregroundColor: Colors.pink.shade800,
+          titleTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.pink.shade800),
+        ),
+      );
+    
+    // --- 5. THE LIGHT PURPLE THEME ---
+    case AppTheme.lightPurple:
+      return baseTheme.copyWith(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF3E5F5),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+         appBarTheme: baseTheme.appBarTheme.copyWith(
+          backgroundColor: Colors.deepPurple.shade50,
+          foregroundColor: Colors.deepPurple.shade800,
+           titleTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple.shade800),
+        ),
+      );
+  }
+}
+
+// --- HELPER FUNCTION WITH ALL 5 NAMES ---
 String getThemeName(AppTheme theme) {
   switch (theme) {
     case AppTheme.light:

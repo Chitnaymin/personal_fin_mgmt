@@ -1,58 +1,92 @@
 import 'package:flutter/material.dart';
+// ignore: unused_import
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter_fin_pwa/models/currency_model.dart';
 import 'package:flutter_fin_pwa/theme/app_themes.dart';
 import 'package:flutter_fin_pwa/services/firestore_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
-  final FirestoreService _firestoreService = FirestoreService();
+  // --- REMOVED THE OLD INSTANCE ---
+  // final FirestoreService _firestoreService = FirestoreService(); // This was the problem
 
   Currency _selectedCurrency = defaultCurrency;
   AppTheme _appTheme = AppTheme.light;
+  bool _isLoading = true;
 
   Currency get selectedCurrency => _selectedCurrency;
   AppTheme get appTheme => _appTheme;
+  bool get isLoading => _isLoading;
 
-  // --- NEW: Load settings when the provider is created ---
   SettingsProvider() {
-    _loadSettings();
-  }
-
-  void _loadSettings() {
-    _firestoreService.getBudget().listen((DocumentSnapshot snapshot) {
-      if (snapshot.exists && snapshot.data() != null) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        
-        // Load the theme from Firestore
-        final String themeName = data['theme'] ?? 'light';
-        // Convert the string name back to our AppTheme enum
-        _appTheme = AppTheme.values.firstWhere(
-          (e) => e.name == themeName,
-          orElse: () => AppTheme.light, // Default to light if not found
-        );
-        
-        // We notify listeners here to update the UI once settings are loaded
-        notifyListeners();
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        _loadUserSettings();
+      } else {
+        _resetToDefaults();
       }
     });
   }
 
-  void updateCurrency(Currency newCurrency) {
-    if (_selectedCurrency != newCurrency) {
-      _selectedCurrency = newCurrency;
+  Future<void> _loadUserSettings() async {
+    _isLoading = true;
+    notifyListeners();
+
+    // Create a fresh instance here to ensure it has the current user's ID
+    final firestoreService = FirestoreService();
+    final userDoc = await firestoreService.getBudget().first;
+
+    if (userDoc.exists) {
+      final data = userDoc.data() as Map<String, dynamic>;
+      final themeName = data['selectedTheme'] as String? ?? 'light';
+      _appTheme = AppTheme.values.firstWhere(
+        (e) => e.name == themeName,
+        orElse: () => AppTheme.light,
+      );
+      final currencyCode = data['selectedCurrencyCode'] as String? ?? 'THB';
+      _selectedCurrency = supportedCurrencies.firstWhere(
+        (c) => c.code == currencyCode,
+        orElse: () => defaultCurrency,
+      );
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> updateTheme(AppTheme newTheme) async {
+    if (_appTheme != newTheme) {
+      _appTheme = newTheme;
+      await _savePreferences();
       notifyListeners();
-      // In the future, you could save the currency preference here too
     }
   }
 
-  void updateTheme(AppTheme newTheme) {
-    if (_appTheme != newTheme) {
-      _appTheme = newTheme;
+  Future<void> updateCurrency(Currency newCurrency) async {
+    if (_selectedCurrency != newCurrency) {
+      _selectedCurrency = newCurrency;
+      await _savePreferences();
       notifyListeners();
-      // --- NEW: Save the theme choice to Firestore ---
-      // We save the theme by its string name (e.g., 'light', 'dark')
-      _firestoreService.saveTheme(newTheme.name);
     }
+  }
+
+  Future<void> _savePreferences() async {
+    try {
+      final firestoreService = FirestoreService();
+      // This correctly calls the single, consolidated method.
+      await firestoreService.saveUserPreferences(
+        _appTheme.name,
+        _selectedCurrency.code,
+      );
+    } catch (e) {
+      print("Error saving preferences: $e");
+    }
+  }
+  
+  void _resetToDefaults() {
+    _appTheme = AppTheme.light;
+    _selectedCurrency = defaultCurrency;
+    _isLoading = false;
+    notifyListeners();
   }
 }
