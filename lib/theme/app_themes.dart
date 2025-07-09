@@ -75,12 +75,12 @@ ThemeData getThemeData(AppTheme theme) {
     case AppTheme.lightPink:
       return baseTheme.copyWith(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFFF0F5),
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 255, 251, 252),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 240, 36, 104)),
         appBarTheme: baseTheme.appBarTheme.copyWith(
-          backgroundColor: Colors.pink.shade50,
-          foregroundColor: Colors.pink.shade800,
-          titleTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.pink.shade800),
+          backgroundColor: const Color.fromARGB(255, 255, 252, 253),
+          foregroundColor: const Color.fromARGB(255, 230, 34, 119),
+          titleTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 189, 25, 96)),
         ),
       );
     
@@ -92,7 +92,7 @@ ThemeData getThemeData(AppTheme theme) {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
          appBarTheme: baseTheme.appBarTheme.copyWith(
           backgroundColor: Colors.deepPurple.shade50,
-          foregroundColor: Colors.deepPurple.shade800,
+          foregroundColor: const Color.fromARGB(255, 80, 47, 180),
            titleTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple.shade800),
         ),
       );
